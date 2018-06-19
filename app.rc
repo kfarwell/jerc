@@ -1,0 +1,29 @@
+fn conf_enable_jerc {
+    enable_jerc=yes
+    conf_enable_app jerc
+}
+
+fn jerc_init {
+    if(! ~ $#enable_jerc 0) {
+        handler_body_main=(tpl_handler `{get_lib_file jerc/form.tpl apps/jerc/form.tpl})
+
+        if(~ $REQUEST_METHOD POST) {
+            if(! ~ '' $"post_arg_jerc_queue)
+                queue $post_arg_jerc_queue
+            if not if(! ~ '' $"post_arg_jerc_toggle)
+                mpc toggle
+            if not if(! ~ '' $"post_arg_jerc_next)
+                mpc next
+
+            post_redirect $base_url$req_path
+        }
+    }
+}
+
+fn queue {
+    name=`{youtube-dl --get-filename --output '%(title)s' --restrict-filenames 'ytsearch:'$1}
+    youtube-dl --quiet --output $musicdir/$name'.%(ext)s' --restrict-filenames --extract-audio --audio-format mp3 'ytsearch:'$1
+    mpc --wait --quiet update
+    mpc add $name.mp3
+    mpc --quiet play
+}
